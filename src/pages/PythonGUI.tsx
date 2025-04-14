@@ -328,6 +328,56 @@ class CodeNexusApp:
         self.write_to_terminal("Code Nexus Wizard Terminal v1.0.0\\n")
         self.write_to_terminal("Type \\"help\\" for a list of available commands.\\n")
         self.write_to_terminal("> ")
+        
+    def create_menu(self):
+        """Create application menu"""
+        menubar = tk.Menu(self.root)
+        self.root.config(menu=menubar)
+        
+        # File menu
+        file_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(label="New File", command=self.new_file)
+        file_menu.add_command(label="Open File", command=self.open_file)
+        file_menu.add_command(label="Save", command=self.save_file)
+        file_menu.add_command(label="Save As", command=self.save_file_as)
+        file_menu.add_separator()
+        file_menu.add_command(label="Exit", command=self.root.quit)
+        
+        # Edit menu
+        edit_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Edit", menu=edit_menu)
+        edit_menu.add_command(label="Undo", command=self.undo)
+        edit_menu.add_command(label="Redo", command=self.redo)
+        edit_menu.add_separator()
+        edit_menu.add_command(label="Cut", command=self.cut)
+        edit_menu.add_command(label="Copy", command=self.copy)
+        edit_menu.add_command(label="Paste", command=self.paste)
+        
+        # View menu
+        view_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="View", menu=view_menu)
+        view_menu.add_command(label="Toggle Terminal", command=self.toggle_terminal)
+        view_menu.add_command(label="Toggle File Explorer", command=self.toggle_file_explorer)
+        view_menu.add_separator()
+        view_menu.add_command(label="Light Theme", command=lambda: self.set_theme("light"))
+        view_menu.add_command(label="Dark Theme", command=lambda: self.set_theme("dark"))
+        
+        # Run menu
+        run_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Run", menu=run_menu)
+        run_menu.add_command(label="Run Current File", command=self.run_current_file)
+        run_menu.add_command(label="Debug Current File", command=self.debug_current_file)
+        
+        # AI menu
+        ai_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="AI", menu=ai_menu)
+        ai_menu.add_command(label="Code Completion", command=self.code_completion)
+        ai_menu.add_command(label="Explain Code", command=self.explain_code)
+        ai_menu.add_command(label="Optimize Code", command=self.optimize_code)
+        ai_menu.add_command(label="Fix Bugs", command=self.fix_bugs)
+        ai_menu.add_separator()
+        ai_menu.add_command(label="LLM Settings", command=self.show_llm_settings)
 `;
 
 export default PythonGUI;
