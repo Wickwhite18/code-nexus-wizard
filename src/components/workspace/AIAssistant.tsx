@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,7 +9,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Bot, Send, Code, Bug, Wand2, RefreshCw } from "lucide-react";
+import { Bot, Send, Code, Bug, Wand2, RefreshCw, Settings } from "lucide-react";
+import { LLMProvider, generateWithLLM } from "@/services/llmService";
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   type: "user" | "assistant";
@@ -27,11 +29,20 @@ const AIAssistant: React.FC = () => {
     },
   ]);
   const [input, setInput] = useState("");
-  const [model, setModel] = useState("ollama");
+  const [model, setModel] = useState<LLMProvider>("ollama");
   const [action, setAction] = useState("general");
   const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
-  const handleSend = () => {
+  // Auto-scroll to bottom of messages
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  const handleSend = async () => {
     if (!input.trim()) return;
 
     // Add user message
@@ -44,23 +55,65 @@ const AIAssistant: React.FC = () => {
     setInput("");
     setLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const responses: Record<string, string> = {
-        general: "I'll help you with that! Let me analyze your request...",
-        complete: "Here's a completion for your code:\n\n```javascript\nfunction processData(data) {\n  // Validate input\n  if (!data || !Array.isArray(data)) {\n    throw new Error('Invalid input: expected an array');\n  }\n  \n  // Process the data\n  return data.map(item => {\n    return {\n      ...item,\n      processed: true,\n      timestamp: new Date().toISOString()\n    };\n  });\n}\n```",
-        debug: "I've analyzed your code and found a potential issue:\n\n```javascript\n// Problem: You're not checking if 'items' exists before accessing it\nconst total = items.reduce((sum, item) => sum + item.price, 0);\n\n// Solution: Add a null check\nconst total = items ? items.reduce((sum, item) => sum + item.price, 0) : 0;\n```",
-        refactor: "Here's how you can refactor your code for better readability and performance:\n\n```javascript\n// Before\nfunction processItems(items) {\n  let results = [];\n  for (let i = 0; i < items.length; i++) {\n    let item = items[i];\n    if (item.active) {\n      results.push({\n        id: item.id,\n        name: item.name,\n        value: item.value * 2\n      });\n    }\n  }\n  return results;\n}\n\n// After\nfunction processItems(items) {\n  return items\n    .filter(item => item.active)\n    .map(item => ({\n      id: item.id,\n      name: item.name,\n      value: item.value * 2\n    }));\n}\n```"
-      };
+    try {
+      // Get LLM response
+      const response = await generateWithLLM({
+        prompt: input,
+        config: {
+          provider: model,
+          model: getDefaultModelForProvider(model),
+          temperature: 0.7,
+        },
+        action: action as any,
+      });
 
+      if (response.error) {
+        toast({
+          title: "Error",
+          description: `Failed to get AI response: ${response.error}`,
+          variant: "destructive",
+        });
+      }
+
+      // Add assistant message
       const assistantMessage: Message = {
         type: "assistant",
-        content: responses[action] || responses.general,
+        content: response.content || "Sorry, I couldn't process your request.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to communicate with the AI service.",
+        variant: "destructive",
+      });
+      console.error("Error sending message:", error);
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
+  };
+
+  const getDefaultModelForProvider = (provider: LLMProvider): string => {
+    switch (provider) {
+      case "ollama":
+        return "codellama";
+      case "deepseek":
+        return "deepseek-coder";
+      case "qwen":
+        return "qwen";
+      case "openrouter":
+        return "mistralai/mixtral-8x7b";
+      default:
+        return "codellama";
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   return (
@@ -71,7 +124,7 @@ const AIAssistant: React.FC = () => {
           <h3 className="font-medium">AI Assistant</h3>
         </div>
         <div className="flex items-center space-x-2">
-          <Select value={model} onValueChange={setModel}>
+          <Select value={model} onValueChange={(value: LLMProvider) => setModel(value)}>
             <SelectTrigger className="w-[140px] h-8">
               <SelectValue placeholder="Select Model" />
             </SelectTrigger>
@@ -82,6 +135,9 @@ const AIAssistant: React.FC = () => {
               <SelectItem value="openrouter">OpenRouter</SelectItem>
             </SelectContent>
           </Select>
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Settings size={16} />
+          </Button>
         </div>
       </div>
 
@@ -119,6 +175,7 @@ const AIAssistant: React.FC = () => {
             </div>
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       <div className="p-4 border-t border-border">
@@ -161,7 +218,7 @@ const AIAssistant: React.FC = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type your message..."
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            onKeyDown={handleKeyDown}
           />
           <Button onClick={handleSend} disabled={loading || !input.trim()}>
             <Send size={16} className="mr-1" />

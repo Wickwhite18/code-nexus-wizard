@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,40 +13,51 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { useLLM } from "@/components/providers/LLMProvider";
+import { useToast } from "@/hooks/use-toast";
 
 interface LLMSettingsProps {
   onClose?: () => void;
 }
 
 const LLMSettings: React.FC<LLMSettingsProps> = ({ onClose }) => {
-  const [activeTab, setActiveTab] = useState("ollama");
-  const [ollamaSettings, setOllamaSettings] = useState({
-    endpoint: "http://localhost:11434",
-    model: "codellama",
-    temperature: 0.7,
-    useLocal: true,
-  });
-  const [deepseekSettings, setDeepseekSettings] = useState({
-    apiKey: "",
-    model: "deepseek-coder",
-    temperature: 0.5,
-  });
-  const [qwenSettings, setQwenSettings] = useState({
-    apiKey: "",
-    model: "qwen",
-    temperature: 0.7,
-  });
-  const [openrouterSettings, setOpenrouterSettings] = useState({
-    apiKey: "",
-    model: "mistralai/mixtral-8x7b",
-    temperature: 0.7,
-  });
+  const { settings, updateSettings, activeProvider, setActiveProvider } = useLLM();
+  const { toast } = useToast();
+  const [localSettings, setLocalSettings] = useState(settings);
+
+  useEffect(() => {
+    setLocalSettings(settings);
+  }, [settings]);
+
+  const handleSave = () => {
+    // Save each provider's settings
+    Object.keys(localSettings).forEach((provider) => {
+      updateSettings(provider as any, localSettings[provider as keyof typeof localSettings]);
+    });
+    
+    toast({
+      title: "Settings saved",
+      description: "Your LLM settings have been saved successfully.",
+    });
+    
+    if (onClose) onClose();
+  };
+
+  const updateLocalSettings = (provider: string, key: string, value: any) => {
+    setLocalSettings((prev) => ({
+      ...prev,
+      [provider]: {
+        ...prev[provider as keyof typeof prev],
+        [key]: value,
+      },
+    }));
+  };
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
       <h2 className="text-2xl font-bold mb-6">LLM Configuration</h2>
       
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeProvider} onValueChange={setActiveProvider as any}>
         <TabsList className="grid grid-cols-4 mb-6">
           <TabsTrigger value="ollama">Ollama</TabsTrigger>
           <TabsTrigger value="deepseek">DeepSeek</TabsTrigger>
@@ -60,9 +71,9 @@ const LLMSettings: React.FC<LLMSettingsProps> = ({ onClose }) => {
               <Label htmlFor="ollama-local" className="font-medium">Use Local Ollama</Label>
               <Switch
                 id="ollama-local"
-                checked={ollamaSettings.useLocal}
+                checked={localSettings.ollama.useLocal}
                 onCheckedChange={(checked) => 
-                  setOllamaSettings({...ollamaSettings, useLocal: checked})
+                  updateLocalSettings("ollama", "useLocal", checked)
                 }
               />
             </div>
@@ -75,9 +86,9 @@ const LLMSettings: React.FC<LLMSettingsProps> = ({ onClose }) => {
             <Label htmlFor="ollama-endpoint">Endpoint URL</Label>
             <Input
               id="ollama-endpoint"
-              value={ollamaSettings.endpoint}
+              value={localSettings.ollama.endpoint}
               onChange={(e) => 
-                setOllamaSettings({...ollamaSettings, endpoint: e.target.value})
+                updateLocalSettings("ollama", "endpoint", e.target.value)
               }
               placeholder="http://localhost:11434"
             />
@@ -86,9 +97,9 @@ const LLMSettings: React.FC<LLMSettingsProps> = ({ onClose }) => {
           <div className="space-y-2">
             <Label htmlFor="ollama-model">Model</Label>
             <Select
-              value={ollamaSettings.model}
+              value={localSettings.ollama.model}
               onValueChange={(value) => 
-                setOllamaSettings({...ollamaSettings, model: value})
+                updateLocalSettings("ollama", "model", value)
               }
             >
               <SelectTrigger id="ollama-model">
@@ -100,27 +111,42 @@ const LLMSettings: React.FC<LLMSettingsProps> = ({ onClose }) => {
                 <SelectItem value="llama2">Llama 2</SelectItem>
                 <SelectItem value="mistral">Mistral</SelectItem>
                 <SelectItem value="phi2">Phi-2</SelectItem>
+                <SelectItem value="deepseek-coder">DeepSeek Coder</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
           <div className="space-y-2">
             <div className="flex justify-between">
-              <Label htmlFor="ollama-temperature">Temperature: {ollamaSettings.temperature}</Label>
+              <Label htmlFor="ollama-temperature">Temperature: {localSettings.ollama.temperature}</Label>
             </div>
             <Slider
               id="ollama-temperature"
               min={0}
               max={1}
               step={0.1}
-              value={[ollamaSettings.temperature]}
+              value={[localSettings.ollama.temperature]}
               onValueChange={(value) => 
-                setOllamaSettings({...ollamaSettings, temperature: value[0]})
+                updateLocalSettings("ollama", "temperature", value[0])
               }
             />
             <p className="text-xs text-muted-foreground">
               Lower values produce more focused and deterministic outputs. Higher values produce more diverse outputs.
             </p>
+          </div>
+          
+          <div className="mt-4 p-4 bg-muted rounded-lg">
+            <h4 className="font-medium mb-2">Installation Instructions (Kali Linux)</h4>
+            <div className="bg-code text-code-foreground p-3 rounded font-mono text-sm overflow-x-auto">
+              <pre>{`# Install Ollama on Kali Linux
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Start Ollama service
+ollama serve &
+
+# Pull CodeLlama model (optimized for code generation)
+ollama pull codellama`}</pre>
+            </div>
           </div>
         </TabsContent>
         
@@ -130,9 +156,9 @@ const LLMSettings: React.FC<LLMSettingsProps> = ({ onClose }) => {
             <Input
               id="deepseek-api-key"
               type="password"
-              value={deepseekSettings.apiKey}
+              value={localSettings.deepseek.apiKey}
               onChange={(e) => 
-                setDeepseekSettings({...deepseekSettings, apiKey: e.target.value})
+                updateLocalSettings("deepseek", "apiKey", e.target.value)
               }
               placeholder="Enter your DeepSeek API key"
             />
@@ -141,9 +167,9 @@ const LLMSettings: React.FC<LLMSettingsProps> = ({ onClose }) => {
           <div className="space-y-2">
             <Label htmlFor="deepseek-model">Model</Label>
             <Select
-              value={deepseekSettings.model}
+              value={localSettings.deepseek.model}
               onValueChange={(value) => 
-                setDeepseekSettings({...deepseekSettings, model: value})
+                updateLocalSettings("deepseek", "model", value)
               }
             >
               <SelectTrigger id="deepseek-model">
@@ -158,18 +184,33 @@ const LLMSettings: React.FC<LLMSettingsProps> = ({ onClose }) => {
           
           <div className="space-y-2">
             <div className="flex justify-between">
-              <Label htmlFor="deepseek-temperature">Temperature: {deepseekSettings.temperature}</Label>
+              <Label htmlFor="deepseek-temperature">Temperature: {localSettings.deepseek.temperature}</Label>
             </div>
             <Slider
               id="deepseek-temperature"
               min={0}
               max={1}
               step={0.1}
-              value={[deepseekSettings.temperature]}
+              value={[localSettings.deepseek.temperature]}
               onValueChange={(value) => 
-                setDeepseekSettings({...deepseekSettings, temperature: value[0]})
+                updateLocalSettings("deepseek", "temperature", value[0])
               }
             />
+          </div>
+          
+          <div className="mt-4 p-4 bg-muted rounded-lg">
+            <h4 className="font-medium mb-2">API Documentation</h4>
+            <p className="text-sm text-muted-foreground mb-2">
+              DeepSeek provides powerful language models trained specifically for code generation and understanding.
+            </p>
+            <a 
+              href="https://platform.deepseek.com/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-nexus-600 hover:underline text-sm"
+            >
+              Visit DeepSeek Platform for API keys
+            </a>
           </div>
         </TabsContent>
         
@@ -179,9 +220,9 @@ const LLMSettings: React.FC<LLMSettingsProps> = ({ onClose }) => {
             <Input
               id="qwen-api-key"
               type="password"
-              value={qwenSettings.apiKey}
+              value={localSettings.qwen.apiKey}
               onChange={(e) => 
-                setQwenSettings({...qwenSettings, apiKey: e.target.value})
+                updateLocalSettings("qwen", "apiKey", e.target.value)
               }
               placeholder="Enter your Qwen API key"
             />
@@ -190,9 +231,9 @@ const LLMSettings: React.FC<LLMSettingsProps> = ({ onClose }) => {
           <div className="space-y-2">
             <Label htmlFor="qwen-model">Model</Label>
             <Select
-              value={qwenSettings.model}
+              value={localSettings.qwen.model}
               onValueChange={(value) => 
-                setQwenSettings({...qwenSettings, model: value})
+                updateLocalSettings("qwen", "model", value)
               }
             >
               <SelectTrigger id="qwen-model">
@@ -208,18 +249,33 @@ const LLMSettings: React.FC<LLMSettingsProps> = ({ onClose }) => {
           
           <div className="space-y-2">
             <div className="flex justify-between">
-              <Label htmlFor="qwen-temperature">Temperature: {qwenSettings.temperature}</Label>
+              <Label htmlFor="qwen-temperature">Temperature: {localSettings.qwen.temperature}</Label>
             </div>
             <Slider
               id="qwen-temperature"
               min={0}
               max={1}
               step={0.1}
-              value={[qwenSettings.temperature]}
+              value={[localSettings.qwen.temperature]}
               onValueChange={(value) => 
-                setQwenSettings({...qwenSettings, temperature: value[0]})
+                updateLocalSettings("qwen", "temperature", value[0])
               }
             />
+          </div>
+          
+          <div className="mt-4 p-4 bg-muted rounded-lg">
+            <h4 className="font-medium mb-2">API Documentation</h4>
+            <p className="text-sm text-muted-foreground mb-2">
+              Qwen provides powerful language models with a focus on multilingual capabilities.
+            </p>
+            <a 
+              href="https://qwenlm.github.io/blog/qwen/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-nexus-600 hover:underline text-sm"
+            >
+              Learn more about Qwen Language Models
+            </a>
           </div>
         </TabsContent>
         
@@ -229,9 +285,9 @@ const LLMSettings: React.FC<LLMSettingsProps> = ({ onClose }) => {
             <Input
               id="openrouter-api-key"
               type="password"
-              value={openrouterSettings.apiKey}
+              value={localSettings.openrouter.apiKey}
               onChange={(e) => 
-                setOpenrouterSettings({...openrouterSettings, apiKey: e.target.value})
+                updateLocalSettings("openrouter", "apiKey", e.target.value)
               }
               placeholder="Enter your OpenRouter API key"
             />
@@ -243,9 +299,9 @@ const LLMSettings: React.FC<LLMSettingsProps> = ({ onClose }) => {
           <div className="space-y-2">
             <Label htmlFor="openrouter-model">Model</Label>
             <Select
-              value={openrouterSettings.model}
+              value={localSettings.openrouter.model}
               onValueChange={(value) => 
-                setOpenrouterSettings({...openrouterSettings, model: value})
+                updateLocalSettings("openrouter", "model", value)
               }
             >
               <SelectTrigger id="openrouter-model">
@@ -264,27 +320,100 @@ const LLMSettings: React.FC<LLMSettingsProps> = ({ onClose }) => {
           
           <div className="space-y-2">
             <div className="flex justify-between">
-              <Label htmlFor="openrouter-temperature">Temperature: {openrouterSettings.temperature}</Label>
+              <Label htmlFor="openrouter-temperature">Temperature: {localSettings.openrouter.temperature}</Label>
             </div>
             <Slider
               id="openrouter-temperature"
               min={0}
               max={1}
               step={0.1}
-              value={[openrouterSettings.temperature]}
+              value={[localSettings.openrouter.temperature]}
               onValueChange={(value) => 
-                setOpenrouterSettings({...openrouterSettings, temperature: value[0]})
+                updateLocalSettings("openrouter", "temperature", value[0])
               }
             />
           </div>
+          
+          <div className="mt-4 p-4 bg-muted rounded-lg">
+            <h4 className="font-medium mb-2">API Documentation</h4>
+            <p className="text-sm text-muted-foreground mb-2">
+              OpenRouter provides unified access to many different LLM providers through a single API.
+            </p>
+            <a 
+              href="https://openrouter.ai/docs" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-nexus-600 hover:underline text-sm"
+            >
+              View OpenRouter Documentation
+            </a>
+          </div>
         </TabsContent>
+        
+        <div className="mt-8 p-4 bg-muted rounded-lg">
+          <h3 className="font-semibold mb-2">Kali Linux Setup Guide</h3>
+          <p className="text-sm text-muted-foreground mb-3">
+            For a complete setup on Kali Linux, you can use our automated bash script:
+          </p>
+          <div className="bg-code text-code-foreground p-3 rounded font-mono text-sm overflow-x-auto mb-3">
+            <pre>{`#!/bin/bash
+# Automated setup script for Code Nexus Wizard on Kali Linux
+
+echo "Starting Code Nexus Wizard setup..."
+
+# Check if running as root
+if [ "$EUID" -ne 0 ]; then
+  echo "Please run as root"
+  exit 1
+fi
+
+# Install system dependencies
+echo "Installing system dependencies..."
+apt update
+apt install -y curl wget git python3 python3-pip nodejs npm
+
+# Install Ollama for local LLM support
+echo "Installing Ollama..."
+curl -fsSL https://ollama.com/install.sh | sh
+systemctl enable ollama
+systemctl start ollama
+
+# Pull some useful coding models
+echo "Downloading coding-specific LLM models..."
+ollama pull codellama
+
+# Set up Python environment
+echo "Setting up Python environment..."
+pip3 install jupyter numpy pandas matplotlib scikit-learn tensorflow
+
+# Install development tools
+echo "Installing development tools..."
+npm install -g typescript eslint prettier
+
+echo "Setup completed successfully!"
+echo "You can now launch Code Nexus Wizard and configure your LLM preferences."
+`}</pre>
+          </div>
+          <Button
+            onClick={() => {
+              navigator.clipboard.writeText(document.querySelector('pre')?.innerText || '');
+              toast({
+                title: "Copied to clipboard",
+                description: "The setup script has been copied to your clipboard.",
+              });
+            }}
+            className="w-full"
+          >
+            Copy Setup Script
+          </Button>
+        </div>
       </Tabs>
       
       <div className="mt-8 flex justify-end space-x-2">
         <Button variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button>
+        <Button onClick={handleSave}>
           Save Settings
         </Button>
       </div>
