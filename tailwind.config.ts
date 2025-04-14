@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,30 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				code: {
+					DEFAULT: '#1f2937',
+					foreground: '#f3f4f6'
+				},
+				nexus: {
+					'50': '#f5f3ff',
+					'100': '#ede9fe',
+					'200': '#ddd6fe',
+					'300': '#c4b5fd',
+					'400': '#a78bfa',
+					'500': '#8b5cf6',
+					'600': '#7c3aed',
+					'700': '#6d28d9',
+					'800': '#5b21b6',
+					'900': '#4c1d95',
+				},
+				terminal: {
+					DEFAULT: '#1a1a1a',
+					foreground: '#f9fafb',
+					success: '#10b981',
+					error: '#ef4444',
+					warning: '#f59e0b',
+					info: '#3b82f6'
 				}
 			},
 			borderRadius: {
@@ -84,11 +109,21 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'cursor-blink': {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0' }
+				},
+				'typing': {
+					from: { width: '0' },
+					to: { width: '100%' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'cursor-blink': 'cursor-blink 1s infinite',
+				'typing': 'typing 3.5s steps(40, end)'
 			}
 		}
 	},
