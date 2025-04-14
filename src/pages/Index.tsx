@@ -161,13 +161,13 @@ const processData = memoize((data) => {
               </TabsContent>
               <TabsContent value="terminal" className="m-0">
                 <div className="bg-terminal text-terminal-foreground p-6 font-mono text-sm">
-                  <div className="terminal-line"><span className="prompt">></span> <span className="command">npm install</span></div>
+                  <div className="terminal-line"><span className="prompt">{">"}</span> <span className="command">npm install</span></div>
                   <div className="terminal-line output">Installing dependencies...</div>
                   <div className="terminal-line output">+ react@18.2.0</div>
                   <div className="terminal-line output">+ typescript@5.0.4</div>
                   <div className="terminal-line output">+ vite@4.3.9</div>
                   <div className="terminal-line output">Added 1249 packages in 32s</div>
-                  <div className="terminal-line"><span className="prompt">></span> <span className="command">npm run dev</span></div>
+                  <div className="terminal-line"><span className="prompt">{">"}</span> <span className="command">npm run dev</span></div>
                   <div className="terminal-line output">
                     VITE v4.3.9 ready in 324 ms<br />
                     ➜ Local: http://localhost:3000/<br />
