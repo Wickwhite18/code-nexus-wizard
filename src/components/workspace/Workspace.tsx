@@ -6,7 +6,8 @@ import Terminal from "./Terminal";
 import Preview from "./Preview";
 import AIAssistant from "./AIAssistant";
 import { Button } from "@/components/ui/button";
-import { Maximize2, Minimize2, Layout, LayoutGrid } from "lucide-react";
+import { Maximize2, Minimize2, Layout, LayoutGrid, Download } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export interface WorkspaceTab {
   id: string;
@@ -105,6 +106,16 @@ const Workspace: React.FC = () => {
             ))}
           </TabsList>
           <div className="flex items-center space-x-1">
+            <Link to="/python-gui">
+              <Button 
+                variant="outline" 
+                size="sm"
+                title="Get Python Desktop Version"
+                className="mr-2"
+              >
+                <Download size={16} className="mr-1" /> Python GUI
+              </Button>
+            </Link>
             <Button 
               variant={layout === "tabs" ? "default" : "ghost"} 
               size="sm"
